@@ -15,7 +15,6 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 from sklearn.model_selection import GridSearchCV
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 def get_ciudades():
@@ -24,8 +23,8 @@ def get_ciudades():
 
 def get_datos_ciudad(ciudad):
     df_datos_ciudad = pd.read_excel('./data/datos_ciudades.xlsx', sheet_name=ciudad)
-    df_datos_ciudad.index = df_datos_ciudad['Fecha']
-    df_datos_ciudad = df_datos_ciudad.drop(columns=['Fecha'])
+    df_datos_ciudad['Fecha'] = pd.to_datetime(df_datos_ciudad['Fecha']).dt.to_period('M')
+    df_datos_ciudad.set_index('Fecha', inplace=True)
     return df_datos_ciudad
 
 def plot_boxplot(df, nom_ciudad):
@@ -51,7 +50,7 @@ def plot_boxplot(df, nom_ciudad):
         width=800
     )
     
-    fig.show()
+    return fig
 
 def plot_heatmap(df, nom_ciudad):
     """
@@ -85,7 +84,7 @@ def plot_heatmap(df, nom_ciudad):
         height=800
     )
     
-    fig.show()
+    return fig
 
 
 def plot_histogram(df, nom_ciudad):
@@ -119,7 +118,7 @@ def plot_histogram(df, nom_ciudad):
         showlegend=False
     )
     
-    fig.show()
+    return fig
 
 def plot_IPC(df, nom_ciudad):
     """
@@ -143,5 +142,122 @@ def plot_IPC(df, nom_ciudad):
         height=400
     )
     
-    fig.show()
+    return fig
 
+
+def plot_confusion_matrix(y_test, y_test_pred):
+    """
+    Genera una matriz de confusión utilizando Plotly.
+    
+    Args:
+        y_test (array): Valores reales de la variable objetivo.
+        y_test_pred (array): Valores predichos de la variable objetivo.
+    """
+    labels = ['Bajo', 'Medio', 'Alto']
+    conf_matrix = confusion_matrix(y_test, y_test_pred)
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=conf_matrix,
+        x=labels,
+        y=labels,
+        colorscale='Blues',
+        text=conf_matrix,
+        texttemplate="%{text}",
+        textfont=dict(size=20),
+        hovertemplate='Predicted: %{x}<br>Actual: %{y}<br>Count: %{text}<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        title='Confusion Matrix',
+        xaxis_title='Predicted',
+        yaxis_title='Actual',
+        width=700,
+        height=600
+    )
+    
+    return fig
+
+def plot_feature_importances(best_model, X_train):
+    """
+    Visualiza la importancia de las características utilizando Plotly.
+    
+    Args:
+        best_model: El modelo entrenado.
+        X_train (DataFrame): El conjunto de entrenamiento.
+    """
+    feature_importances = pd.DataFrame(best_model.feature_importances_, index=X_train.columns, columns=['importance'])
+    feature_importances = feature_importances.sort_values('importance', ascending=False)
+    
+    print(feature_importances)
+    
+    fig = go.Figure(data=[go.Bar(
+        x=feature_importances.index,
+        y=feature_importances['importance'],
+        text=feature_importances['importance'],
+        textposition='auto',
+        hovertemplate='Característica: %{x}<br>Importancia: %{y}<extra></extra>'
+    )])
+    
+    fig.update_layout(
+        title='Importancia de las Características',
+        xaxis_title='Características',
+        yaxis_title='Importancia',
+        width=800,
+        height=600
+    )
+    
+    return fig
+
+def random_forest_model(df):
+    """
+    Realiza un modelo predictivo utilizando Random Forest.
+    
+    Args:
+        df (DataFrame): El DataFrame con los datos.
+        features (list): Lista de características a utilizar en el modelo.
+        target (str): Nombre de la columna objetivo.
+        
+    Returns:
+        DataFrame: El classification_report del modelo.
+    """
+    features = ['PRECTOTCORR', 'T2M', 'T2M_MAX', 'T2M_MIN', 'RH2M', 'WS10M']
+    target = 'IPC_mensual'
+    df['IPC_Category'] = pd.qcut(df[target], q=3, labels=[0, 1, 2])
+
+    X = df[features]
+    y = df['IPC_Category']
+
+    # Dividir el conjunto de datos en entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    rf = RandomForestClassifier(random_state=42)
+
+    # Definir los hiperparámetros a ajustar
+    param_grid = {
+        'criterion': ['gini', 'entropy'],
+        'n_estimators': [100, 200, 300],
+        'max_depth': [None, 5, 10],
+        'max_samples': [None, 0.5, 0.8],
+        'min_samples_split': [2, 5, 10]
+    }
+
+    # Realizar la búsqueda de hiperparámetros con validación cruzada
+    grid_search = GridSearchCV(estimator=rf,
+                               param_grid=param_grid,
+                               cv=5,
+                               scoring='accuracy')
+
+    grid_search.fit(X_train, y_train)
+
+    # Obtener el mejor modelo y sus hiperparámetros
+    best_model = grid_search.best_estimator_
+    best_params = grid_search.best_params_
+
+    y_test_pred = best_model.predict(X_test)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+
+    # Generar el classification_report
+    report = classification_report(y_test, y_test_pred, output_dict=True)
+    report_df = pd.DataFrame(report).transpose()
+
+    return report_df, y_test, y_test_pred, best_model, X_train

@@ -14,12 +14,11 @@ ciudades = ipc.get_ciudades()
 
 app.layout = html.Div([
     dcc.Store(id='df-ciudades-store'),
-    dcc.Store(id='df-portafolios-seleccion-store'),
     dcc.Store(id='portafolio-seleccionado-store'),
 
     #---------- Header Visor ----------#
     html.Div([
-        html.Img(src='img/logo_javeriana.png', style={'height':'70px', 'float':'left'}),
+        html.Img(src='https://www.javeriana.edu.co/recursosdb/8091523/8157776/javeriana-web-logo-edu.png/d5eb5e3d-2e95-0d4f-877d-0ed67a254251?t=1676557813805', style={'height':'150px', 'float':'left'}),
         html.H4('Pontificia Universidad Javeriana - Analítica de Datos', style={'color': 'black', 'clear':'left'}),
     ], style={'padding': '5px 10px', 'backgroundColor': 'white', 'color': 'black'}),
     #------------------------------------#
@@ -33,14 +32,14 @@ app.layout = html.Div([
             html.Div([ 
                  ### header Selección ###
                 html.Div([ 
-                    html.H3('Selección', style={'color': 'white'}),
+                    html.H3('Selección de Ciudades', style={'color': 'white'}),
                 ], style={'padding': '5px 10px', 'backgroundColor': 'black', 'color': 'white'}),
                 #######################
                 html.Div([
                     ### dropdown Selección ###
                     html.Label('Ciudad:'),
                     dcc.Dropdown(
-                        id='estrategia-dropdown',
+                        id='ciudades-dropdown',
                         options=[{'label': i, 'value': i} for i in ciudades],
                         style={'width': '300px','margin-bottom': '10px'},  
                     ),
@@ -52,7 +51,7 @@ app.layout = html.Div([
                         ### Botón Ver ###
                         html.Button('Ver', id='ver-button', style={
                             'background-color': 'blue',
-                            'color': 'black', 
+                            'color': 'white', 
                             'margin': '10px',
                             'border-radius': '5px',  # Agrega redondez al botón
                             'font-weight': 'bold',  # Hace que el texto sea negrita
@@ -101,17 +100,24 @@ app.layout = html.Div([
     #         ],style={'display': 'inline-block'}),
     # ], style={'display': 'flex', 'padding':'10px','justify-content': 'flex-start', 'align-items': 'flex-start', 'backgroundColor': 'white'}),
 
-    # #---------- Contenido Correlaciones ----------#
-    # html.Div([
-    #     html.Div([html.H3('Correlación',style={'color': 'white','display': 'block'}),
-    #             ], style={'padding': '3px 10px', 'backgroundColor': 'black', 'color': 'white'}),
-        
-    #     html.Div([
-    #         html.Div(id='output-container-graph_corr', style={'padding': '10px'}),
-    #     ], style={'display': 'flex','justify-content': 'center', 'align-items': 'center'}),
-        
-    # ], id='corr-div', style={'display': 'none', 'justify-content': 'center', 'align-items': 'center'}),
-    # #------------------------------------#
+    #---------- Contenido Graficas ----------#
+    html.Div([
+        html.Div([html.H3('Comportamiento de los Datos',style={'color': 'white','display': 'block'}), ], style={'padding': '3px 10px', 'backgroundColor': 'black', 'color': 'white'}),
+        html.Div([
+            html.Div(id='output-container-graph_serie', style={'padding': '10px'}),
+        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center', 'align-items': 'center'}),
+    ], id='serie-div'),
+    #------------------------------------#
+
+    #---------- Contenido random forest ----------#
+    html.Div([
+        html.Div([html.H3('Predicción con Random Forest', style={'color': 'white', 'display': 'block'})],
+                style={'padding': '3px 10px', 'backgroundColor': 'black', 'color': 'white'}),
+        html.Div([
+            html.Div(id='output-container-random-forest', style={'padding': '10px'}),
+        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center', 'align-items': 'center'}),
+    ], id='random-forest-div', style={'display': 'none'})
+
 
     # #---------- Contenido Optimización ----------#
     # html.Div([
@@ -166,68 +172,82 @@ app.layout = html.Div([
 
 '''-------------------------------Callbacks ------------------------------- '''
 
-# # Actualizar restricciones del portafolio seleccionado
+# Actualizar el ciudad seleccionada
 # @app.callback(
-#     Output('output-constraints', 'children'),
-#     Output('portafolio-seleccionado-store', 'data'),
-#     [Input('portafolio-dropdown', 'value'),
-#      Input('reset-button', 'n_clicks')],  
+#     Output('df-ciudades-store', 'data'),
+#     Input('ciudades-dropdown', 'value'),
 #     prevent_initial_call=True,
 # )
-# def update_const(value, n_clicks):  
-#     portafolio_seleccionado = value
-#     df_restricciones = leer_archivo_optimizacion(ruta_opt + '/OPTIMIZACIONES/INDICES_OPT.xlsx', 'Restricciones') 
-#     df_restricciones = df_restricciones.loc[df_restricciones['Ticket_Portfolio'] == portafolio_seleccionado]
-#     df_restricciones = df_restricciones[['max_traking_error', 'Duracion_Inferior', 'Duracion_Superior', 'Aversion']]
-#     df_restricciones['max_traking_error'] = np.round(df_restricciones['max_traking_error'] * 100,2)
-#     return dash_table.DataTable(
-#         id='my-table-constraints',
-#         data=df_restricciones.to_dict('records'),
-#         columns=[{'name': i, 'id': i} for i in df_restricciones.columns],
-#         style_header={
-#             'backgroundColor': 'black',
-#             'color': 'white',
-#         },
-#         style_data={
-#             'border': '1px solid ' + 'black'
-#         },
-#         editable=True,
-#     ), portafolio_seleccionado
+# def update_ciudad(value):  
+#     ciudad_seleccionada = value
+#     print(ciudad_seleccionada)
+    
+#     df_datos_ciudad = ipc.get_datos_ciudad(ciudad_seleccionada)
+#     print(df_datos_ciudad)
 
-# # Actualizar el portafolio seleccionado
-# @app.callback(
-#     Output('output-select', 'children'),
-#     Output('df-portafolios-seleccion-store', 'data'),
-#     [Input('portafolio-dropdown', 'value'),
-#      Input('reset-button', 'n_clicks')],
-#     State('df-portafolios-seleccionados-store', 'data'),
-#     prevent_initial_call=True,
-# )
-# def update_port(value, n_clicks, df_portafolios_seleccionados_data):  
-#     df_portafolios_seleccionados = pd.DataFrame.from_dict(df_portafolios_seleccionados_data)
-#     portafolio_seleccionado = value
-#     print(portafolio_seleccionado)
-#     df_portafolios_seleccion = df_portafolios_seleccionados.query("Ticket_Portfolio == @portafolio_seleccionado").reset_index(drop=True)
+#     # Actualizar el almacenamiento de datos
+#     return df_datos_ciudad.to_dict('records')
 
-#     df_portafolios_seleccion.set_index('INDICES', inplace=True)
-#     df_portafolios_seleccion_3col = df_portafolios_seleccion.iloc[:, :-3]
-#     df_portafolios_seleccion_3col.iloc[:, -3:] = df_portafolios_seleccion_3col.iloc[:, -3:] * 100
-#     df_portafolios_seleccion_3col = df_portafolios_seleccion_3col.round(2)
 
-#     return dash_table.DataTable(
-#         id='port-opt-3col',
-#         data=df_portafolios_seleccion_3col.to_dict('records'),
-#         columns=[{'name': i, 'id': i, 'editable': (i in ['Benchmark','Inferior', 'Superior'])} for i in df_portafolios_seleccion_3col.columns],
-#         style_header={
-#             'backgroundColor': 'black',
-#             'color': 'white',
-#         },
-#         style_data={
-#             'border': '1px solid ' + 'black'
-#         },
-#         editable=True,
-#     ), df_portafolios_seleccion.to_dict()
+@app.callback(
+    Output('df-ciudades-store', 'data'),
+    Output('output-container-graph_serie', 'children'),
+    Output('serie-div', 'style'),
+    Input('ciudades-dropdown', 'value'),
+    Input('ver-button', 'n_clicks'),
+    prevent_initial_call=True,
+)
+def update_ciudad(value, n_clicks):
+    ciudad_seleccionada = value
+    #print(ciudad_seleccionada)
+    df_datos_ciudad = ipc.get_datos_ciudad(ciudad_seleccionada)
+    #print(df_datos_ciudad)
 
+    # Generar los gráficos utilizando las funciones de la librería
+    fig_boxplot = ipc.plot_boxplot(df_datos_ciudad, ciudad_seleccionada)
+    fig_heatmap = ipc.plot_heatmap(df_datos_ciudad, ciudad_seleccionada)
+    fig_histogram = ipc.plot_histogram(df_datos_ciudad, ciudad_seleccionada)
+    fig_ipc = ipc.plot_IPC(df_datos_ciudad, ciudad_seleccionada)
+
+    # Actualizar el almacenamiento de datos
+    if n_clicks is not None:
+        return df_datos_ciudad.to_dict('records'), [
+            dcc.Graph(figure=fig_ipc),
+            dcc.Graph(figure=fig_boxplot),
+            dcc.Graph(figure=fig_heatmap),
+            dcc.Graph(figure=fig_histogram),
+        ], {'display': 'block', 'justify-content': 'center', 'align-items': 'center'}
+    else:
+        return df_datos_ciudad.to_dict('records'), [], {'display': 'none', 'justify-content': 'center', 'align-items': 'center'}
+
+
+@app.callback(
+    Output('output-container-random-forest', 'children'),
+    Output('random-forest-div', 'style'),
+    Input('ver-button', 'n_clicks'),
+    State('df-ciudades-store', 'data'),
+    prevent_initial_call=True,
+)
+def update_random_forest(n_clicks, data):
+    if n_clicks is not None:
+        df = pd.DataFrame(data)
+        report_df, y_test, y_test_pred, best_model, X_train = ipc.random_forest_model(df)
+        fig_confusion_matrix = ipc.plot_confusion_matrix(y_test, y_test_pred)
+        fig_feature_importances = ipc.plot_feature_importances(best_model, X_train)
+        
+        return [
+            dcc.Graph(figure=fig_confusion_matrix),
+            dcc.Graph(figure=fig_feature_importances),
+            html.Div([
+                html.H4('Classification Report'),
+                dash_table.DataTable(
+                    data=report_df.to_dict('records'),
+                    columns=[{'name': i, 'id': i} for i in report_df.columns],
+                )
+            ])
+        ], {'display': 'block'}
+    else:
+        return [], {'display': 'none'}
 
 # # Generar optimización
 # @app.callback( [Output('output-container-opt-u', 'children'), 
@@ -236,7 +256,7 @@ app.layout = html.Div([
 #                  Input('optimizacion-dropdown', 'value')],
 #                 State('port-opt-3col', 'data'), 
 #                 State('my-table-constraints', 'data'), 
-#                 State('df-portafolios-seleccion-store', 'data'), 
+#                 State('df-ciudades-store', 'data'), 
 #                 prevent_initial_call=True) 
 # def update_optimization(n_clicks, value_opt, data, data_cons, df_portafolios_seleccion_data): 
 #     #archivo retornos consolidados
@@ -316,7 +336,7 @@ app.layout = html.Div([
 
 #     """ Resticciones para la optimización """
 #     # df_restricciones = leer_archivo_optimizacion(ruta_opt + '/OPTIMIZACIONES/INDICES_OPT.xlsx', 'Restricciones') 
-#     # df_restricciones = df_restricciones.loc[df_restricciones['Ticket_Portfolio'] == portafolio_seleccionado]
+#     # df_restricciones = df_restricciones.loc[df_restricciones['Ticket_Portfolio'] == ciudad_seleccionada]
 #     df_restricciones = pd.DataFrame(data_cons)
 
 #     # convierte los valores de todas las columnas a numerico
@@ -421,7 +441,7 @@ app.layout = html.Div([
 #      State('portafolio-seleccionado-store', 'data')],
 #     prevent_initial_call=True,
 # )
-# def export_optimization(optimize_button, export_button, data_opt, data_met, portafolio_seleccionado):
+# def export_optimization(optimize_button, export_button, data_opt, data_met, ciudad_seleccionada):
 #     ctx = dash.callback_context
 #     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
@@ -434,7 +454,7 @@ app.layout = html.Div([
 #         df_opt_u = pd.DataFrame(data_opt)
 #         df_met_ut = pd.DataFrame(data_met)
 #         df_concat = pd.concat([df_opt_u, df_met_ut], axis=1)
-#         df_concat.to_excel(ruta_opt + f'/data/{portafolio_seleccionado}_opt.xlsx', sheet_name='OPTIMIZACION', index=False)
+#         df_concat.to_excel(ruta_opt + f'/data/{ciudad_seleccionada}_opt.xlsx', sheet_name='OPTIMIZACION', index=False)
         
 #         return {'display': 'block',
 #                 'padding': '10px', 
@@ -445,7 +465,7 @@ app.layout = html.Div([
 # @app.callback(
 #     Output('parent-div-select', 'style'),
 #     #Input('df-portafolios-seleccionados-store', 'data'),
-#     Input('portafolio-dropdown', 'value'),
+#     Input('ciudades-dropdown', 'value'),
 #     #Input('port-opt-3col', 'data'),
 #     prevent_initial_call=True,
 # )
@@ -455,7 +475,7 @@ app.layout = html.Div([
 # # Mostrar div restricciones
 # @app.callback(
 #     Output('parent-div-cons', 'style'),
-#     Input('portafolio-dropdown', 'value'),
+#     Input('ciudades-dropdown', 'value'),
 #     #Input('my-table-constraints', 'data'),
 #     prevent_initial_call=True,
 # )
@@ -465,7 +485,7 @@ app.layout = html.Div([
 # #mostrar mensaje informativo
 # @app.callback(
 #     Output('informacion_opt', 'style'),
-#     Input('portafolio-dropdown', 'value'),
+#     Input('ciudades-dropdown', 'value'),
 #     prevent_initial_call=True,
 # )
 # def show_info(data):
@@ -480,7 +500,7 @@ app.layout = html.Div([
 
 # #Mostrar boton Resetear
 # @app.callback(
-#     Output('reset-button', 'style'),
+#     Output('ver-button', 'style'),
 #     Input('ver-button', 'n_clicks'),
 #     prevent_initial_call=True,
 # )
@@ -498,7 +518,7 @@ app.layout = html.Div([
 # @app.callback(
 #     [Output('optimization-div', 'style'), 
 #      Output('graphs-div', 'style'),
-#      Output('corr-div', 'style')],
+#      Output('serie-div', 'style')],
 #      Input('ver-button', 'n_clicks'),
 #     prevent_initial_call=True,
 # )
@@ -510,23 +530,21 @@ app.layout = html.Div([
 #     )
 
 # # Actualizar las gráficas
-# # Correlaciones
+# Serie de tiempo IPC
 # @app.callback(
-#     Output('output-container-graph_corr', 'children'),
+#     Output('output-container-graph_serie', 'children'),
 #     Input('ver-button', 'n_clicks'),
-#     State('df-portafolios-seleccion-store', 'data'), 
+#     State('df-ciudades-store', 'data'), 
 #     prevent_initial_call=True,
 # )
-# def update_graphs_corr(n_clicks,df_portafolios_seleccion_data):
+# def update_graphs_ipc(n_clicks,df_ciudades_seleccion_data):
 
-#     df_portafolios_seleccion = pd.DataFrame(df_portafolios_seleccion_data)
-#     indices_opt = df_portafolios_seleccion.index.to_list()
-
-#     # Se filtra el Datafreme de retonos solo para los indices que se van a optimizar
-#     df_ret_opt = df_ret_diarios_aj[indices_opt]
-#     assets = df_portafolios_seleccion['Asset']
-
-#     fig = asset_management.plot_corr(df_ret_opt,assets)
+#     df_ciudad_seleccion = pd.DataFrame.from_dict(df_ciudades_seleccion_data)
+    
+#     df_ciudad_seleccion.index = df_ciudad_seleccion['Fecha']
+#     df_ciudad_seleccion = df_ciudad_seleccion.drop(columns=['Fecha'])
+#     print(df_ciudad_seleccion)
+#     fig = ipc.plot_IPC(df_ciudad_seleccion,'newiva')
     
 #     return dcc.Graph(figure=fig)
 
@@ -534,7 +552,7 @@ app.layout = html.Div([
 # @app.callback(
 #     Output('output-container-graph_returns', 'children'),
 #     Input('ver-button', 'n_clicks'),
-#     State('df-portafolios-seleccion-store', 'data'), 
+#     State('df-ciudades-store', 'data'), 
 #     prevent_initial_call=True,
 # )
 # def update_graphs_returns(n_clicks,df_portafolios_seleccion_data):
