@@ -1,5 +1,8 @@
 pandas
 numpy
-matplotlib.pyplot
+scikit-learn
+plotly
+dash
+matplotlib
 seaborn
 requests

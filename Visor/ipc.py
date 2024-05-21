@@ -1,14 +1,6 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import requests
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import DBSCAN
-from sklearn.metrics import silhouette_score
-from sklearn.neighbors import NearestNeighbors
-from itertools import product
-from sklearn.decomposition import PCA 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
@@ -63,18 +55,18 @@ def plot_heatmap(df, nom_ciudad):
     corr_matrix = df.corr()
     
     fig = go.Figure(data=go.Heatmap(
-        z=corr_matrix.values,
-        x=corr_matrix.columns,
-        y=corr_matrix.index,
-        colorscale='RdBu',
-        zmid=0,
-        zmin=-1,
-        zmax=1,
-        text=corr_matrix.values,
-        texttemplate="%{text:.2f}",
-        textfont=dict(size=12),
-        hovertemplate='Correlación entre %{x} y %{y}: %{text:.2f}<extra></extra>'
-    ))
+            z=corr_matrix.values,
+            x=corr_matrix.columns,
+            y=corr_matrix.index,
+            colorscale='Blues',
+            zmid=0,
+            zmin=-1,
+            zmax=1,
+            text=corr_matrix.values,
+            texttemplate="%{text:.2f}",
+            textfont=dict(size=12),
+            hovertemplate='Correlación entre %{x} y %{y}: %{text:.2f}<extra></extra>'
+        ))
     
     fig.update_layout(
         title=f'Heatmap de Correlación de {nom_ciudad}',
@@ -188,12 +180,10 @@ def plot_feature_importances(best_model, X_train):
     feature_importances = pd.DataFrame(best_model.feature_importances_, index=X_train.columns, columns=['importance'])
     feature_importances = feature_importances.sort_values('importance', ascending=False)
     
-    print(feature_importances)
-    
     fig = go.Figure(data=[go.Bar(
         x=feature_importances.index,
         y=feature_importances['importance'],
-        text=feature_importances['importance'],
+        text= np.round(feature_importances['importance'],2),
         textposition='auto',
         hovertemplate='Característica: %{x}<br>Importancia: %{y}<extra></extra>'
     )])
@@ -208,21 +198,21 @@ def plot_feature_importances(best_model, X_train):
     
     return fig
 
-def random_forest_model(df):
+def best_random_forest_model(df, features, target):
     """
     Realiza un modelo predictivo utilizando Random Forest.
     
     Args:
         df (DataFrame): El DataFrame con los datos.
-        features (list): Lista de características a utilizar en el modelo.
-        target (str): Nombre de la columna objetivo.
-        
+        features (list): Las características a utilizar.
+        target (str): La variable objetivo.
     Returns:
         DataFrame: El classification_report del modelo.
     """
-    features = ['PRECTOTCORR', 'T2M', 'T2M_MAX', 'T2M_MIN', 'RH2M', 'WS10M']
-    target = 'IPC_mensual'
     df['IPC_Category'] = pd.qcut(df[target], q=3, labels=[0, 1, 2])
+    
+    scaler = StandardScaler()
+    df[features] = scaler.fit_transform(df[features])
 
     X = df[features]
     y = df['IPC_Category']
@@ -261,3 +251,60 @@ def random_forest_model(df):
     report_df = pd.DataFrame(report).transpose()
 
     return report_df, y_test, y_test_pred, best_model, X_train
+
+def random_forest_model(df, features, target, criterion, n_estimators, max_depth, max_samples, min_samples_split):
+    """
+    Realiza un modelo predictivo utilizando Random Forest.
+    
+    Args:
+        df (DataFrame): El DataFrame con los datos.
+        features (list): Las características a utilizar.
+        target (str): La variable objetivo.
+        criterion (str): El criterio de división.
+        n_estimators (int): El número de árboles.
+        max_depth (int): La profundidad máxima de los árboles.
+        max_samples (float): La proporción de muestras a utilizar.
+        min_samples_split (int): El número mínimo de muestras para dividir un nodo.
+    Returns:
+        DataFrame: El classification_report del modelo.
+    """
+
+    #estandarizar df
+    df = standardize(df)
+
+    df['IPC_Category'] = pd.qcut(df[target], q=3, labels=[0, 1, 2])
+
+    X = df[features]
+    y = df['IPC_Category']
+
+    # Dividir el conjunto de datos en entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    rf = RandomForestClassifier(random_state=42,
+                                criterion=criterion,
+                                n_estimators=n_estimators,
+                                max_depth=max_depth,
+                                max_samples=max_samples,
+                                min_samples_split=min_samples_split)
+
+    rf.fit(X_train, y_train)
+    y_test_pred = rf.predict(X_test)
+
+    # Generar el classification_report
+    report = classification_report(y_test, y_test_pred, output_dict=True)
+    report_df = np.round(pd.DataFrame(report).transpose(),3)
+
+    return report_df, y_test, y_test_pred, rf, X_train
+
+def standardize(df):
+    """
+    Estandariza un DataFrame.
+    Args:
+        df (DataFrame): El DataFrame.
+    Returns:
+        DataFrame: El DataFrame estandarizado.
+    """
+    scaler = StandardScaler()
+    df_scaled = scaler.fit_transform(df)
+    df_scaled = pd.DataFrame(df_scaled, columns=df.columns)
+    return df_scaled
