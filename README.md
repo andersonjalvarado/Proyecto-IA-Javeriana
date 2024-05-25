@@ -1,7 +1,4 @@
-Claro, aquí tienes el README en formato Markdown:
-
-```markdown
-# Proyecto de Visualización con Dash
+# Proyecto de Aprendizaje de Máquina
 
 Este proyecto utiliza la librería Dash para visualizar datos procesados con pandas, numpy y scikit-learn. La visualización se ejecuta en un servidor local y se puede acceder a través de un navegador web.
 
@@ -83,4 +80,3 @@ Si deseas contribuir a este proyecto, por favor sigue estos pasos:
 ## Contacto
 
 Para cualquier pregunta o sugerencia, por favor abre un issue en el repositorio o contacta al autor del proyecto.
-```
