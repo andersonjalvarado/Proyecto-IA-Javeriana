@@ -10,11 +10,11 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 def get_ciudades():
-    df_ipc = pd.read_excel('./data/IPC_Por_ciudad_IQY.xlsx',skiprows=range(0,2))
+    df_ipc = pd.read_excel('././data/IPC_Por_ciudad_IQY.xlsx',skiprows=range(0,2))
     return df_ipc.columns[1:23].tolist()
 
 def get_datos_ciudad(ciudad):
-    df_datos_ciudad = pd.read_excel('./data/datos_ciudades.xlsx', sheet_name=ciudad)
+    df_datos_ciudad = pd.read_excel('././data/datos_ciudades.xlsx', sheet_name=ciudad)
     df_datos_ciudad['Fecha'] = pd.to_datetime(df_datos_ciudad['Fecha']).dt.to_period('M')
     df_datos_ciudad.set_index('Fecha', inplace=True)
     return df_datos_ciudad

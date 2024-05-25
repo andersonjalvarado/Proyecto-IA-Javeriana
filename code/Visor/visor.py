@@ -3,9 +3,7 @@ from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
 import pandas as pd
 import ipc
 
-
 app = Dash(__name__, suppress_callback_exceptions=True)
-
 
 #ciudades
 ciudades = ipc.get_ciudades()
