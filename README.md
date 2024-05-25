@@ -10,6 +10,10 @@ Proyecto
 ├── code/
 │   ├── Visor/
 │   │   └── visor.py
+│   │   └── ipc.py
+│   │── NoteBook/
+│       └── Proyecto.py
+├── data
 │
 ├── requeriments.txt
 ├── README.md
@@ -60,22 +64,15 @@ Para ejecutar la visualización con Dash, sigue estos pasos:
 ## Archivos Clave
 
 - `requeriments.txt`: Lista de dependencias necesarias para ejecutar el proyecto.
+- `Informe_Proyecto.pdf`: Informe sobre el proyecto.
 - `code/Visor/visor.py`: Script principal que contiene la configuración y ejecución del servidor Dash.
+- `code/NoteBook/Proyecto.ipnb`: Notebook de la realización y prueba del Proyecto.
 
 ## Notas Adicionales
 
 - Asegúrate de tener todas las dependencias correctamente instaladas para evitar errores durante la ejecución.
 - Puedes personalizar el script `visor.py` según tus necesidades específicas de visualización y procesamiento de datos.
 
-## Contribuciones
-
-Si deseas contribuir a este proyecto, por favor sigue estos pasos:
-
-1. Realiza un fork del repositorio.
-2. Crea una nueva rama (`git checkout -b feature/nueva-caracteristica`).
-3. Realiza los cambios necesarios y confirma tus cambios (`git commit -m 'Agregar nueva característica'`).
-4. Sube tus cambios a la rama (`git push origin feature/nueva-caracteristica`).
-5. Abre un Pull Request para revisar y fusionar tus cambios.
 
 ## Contacto
 
